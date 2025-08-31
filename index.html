@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard 28 FX-Paare – mit Zeitspanne-Buttons</title>
+  <title>Dashboard 28 FX-Paare – mit Zeitspanne-Buttons (verzögertes Laden)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root { color-scheme: dark; }
@@ -11,7 +11,6 @@
       margin:0; background:#111; color:#eee; font-family: system-ui, sans-serif;
       display:flex; flex-direction:column; height:100vh;
     }
-    /* Toolbar */
     .toolbar{
       display:flex; gap:8px; align-items:center; padding:10px 12px;
       border-bottom:1px solid #222; background:#0f0f10; position:sticky; top:0; z-index:10;
@@ -23,6 +22,7 @@
     }
     .btn:hover{ background:#1b1b20; }
     .btn.active{ border-color:#3a86ff; box-shadow:0 0 0 2px rgba(58,134,255,0.25) inset; }
+
     /* Grid */
     #grid{
       flex:1; display:grid; gap:6px; padding:6px;
@@ -52,84 +52,86 @@
   <script>
     // === 28 Währungspaare ===
     const symbols = [
-      "FX:EURUSD",
-      "FX:GBPUSD",
-      "FX:AUDUSD",
-      "FX:NZDUSD",
-      "FX:USDCHF",
-      "FX:USDJPY",
-      "FX:USDCAD",
-      "FX:EURGBP",
-      "FX:EURJPY",
-      "FX:EURAUD",
-      "FX:EURNZD",
-      "FX:EURCAD",
-      "FX:EURCHF",
-      "FX:GBPJPY",
-      "FX:GBPAUD",
-      "FX:GBPNZD",
-      "FX:GBPCAD",
-      "FX:GBPCHF",
-      "FX:AUDNZD",
-      "FX:AUDCAD",
-      "FX:AUDJPY",
-      "FX:AUDCHF",
-      "FX:NZDJPY",
-      "FX:NZDCAD",
-      "FX:NZDCHF",
-      "FX:CADJPY",
-      "FX:CADCHF",
-      "FX:CHFJPY"
+      "FX:EURUSD","FX:GBPUSD","FX:AUDUSD","FX:NZDUSD","FX:USDCHF","FX:USDJPY","FX:USDCAD",
+      "FX:EURGBP","FX:EURJPY","FX:EURAUD","FX:EURNZD","FX:EURCAD","FX:EURCHF",
+      "FX:GBPJPY","FX:GBPAUD","FX:GBPNZD","FX:GBPCAD","FX:GBPCHF",
+      "FX:AUDNZD","FX:AUDCAD","FX:AUDJPY","FX:AUDCHF",
+      "FX:NZDJPY","FX:NZDCAD","FX:NZDCHF",
+      "FX:CADJPY","FX:CADCHF","FX:CHFJPY"
     ];
 
-    // === Layout ===
-    const cols = 7;            // 7 pro Reihe
-    const rows = 4;            // 4 Reihen
-    const total = cols * rows; // 28 Charts
+    // === Einstellungen für das verzögerte Laden ===
+    const DELAY_MS = 250;       // Abstand zwischen zwei Widget-Inits
+    const RETRY_DELAY_MS = 400; // Wartezeit vor einem einmaligen Retry
+    const MAX_RETRIES = 1;      // pro Kachel genau 1 Retry
 
-    function renderGrid(dateRange) {
+    // Hilfsfunktion
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // Erzeugt 1 Mini-Widget
+    function createMiniWidget(symbol, dateRange){
+      const outer = document.createElement('div');
+      outer.className = 'chart';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'tradingview-widget-container';
+
+      const widget = document.createElement('div');
+      widget.className = 'tradingview-widget-container__widget';
+
+      const s = document.createElement('script');
+      s.async = true;
+      s.type = 'text/javascript';
+      s.src  = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+      s.innerHTML = JSON.stringify({
+        symbol: symbol,
+        dateRange: dateRange,
+        colorTheme: "dark",
+        locale: "de_DE",
+        autosize: true
+      });
+
+      wrap.appendChild(widget);
+      wrap.appendChild(s);
+      outer.appendChild(wrap);
+      return outer;
+    }
+
+    // Rendert alle Charts SEQUENTIELL mit Delay + einfachem Retry
+    async function renderGrid(dateRange) {
       const grid = document.getElementById('grid');
       grid.innerHTML = "";
 
-      for (let i = 0; i < total; i++) {
-        const sym = symbols[i]; // exakt 28 Symbole
+      for (let i = 0; i < symbols.length; i++) {
+        const sym = symbols[i];
 
-        const outer = document.createElement('div');
-        outer.className = 'chart';
-
-        const wrap = document.createElement('div');
-        wrap.className = 'tradingview-widget-container';
-
-        const widget = document.createElement('div');
-        widget.className = 'tradingview-widget-container__widget';
-
-        const s = document.createElement('script');
-        s.async = true;
-        s.type = 'text/javascript';
-        s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
-        s.innerHTML = JSON.stringify({
-          symbol: sym,
-          dateRange: dateRange,
-          colorTheme: "dark",
-          locale: "de_DE",
-          autosize: true
-        });
-
-        wrap.appendChild(widget);
-        wrap.appendChild(s);
-        outer.appendChild(wrap);
-        grid.appendChild(outer);
+        // Versuch + optionaler Retry
+        let tries = 0, ok = false;
+        while (!ok && tries <= MAX_RETRIES) {
+          try {
+            const tile = createMiniWidget(sym, dateRange);
+            grid.appendChild(tile);
+            ok = true;
+          } catch (e) {
+            tries++;
+            if (tries <= MAX_RETRIES) {
+              await sleep(RETRY_DELAY_MS);
+            }
+          }
+        }
+        // Abstand zwischen zwei Inits, damit Verbindungen/GPU nicht spiken
+        await sleep(DELAY_MS);
       }
     }
 
     // Buttons verbinden
     const buttons = Array.from(document.querySelectorAll('.btn'));
     buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         buttons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         const range = btn.getAttribute('data-range');
-        renderGrid(range);
+        await renderGrid(range);
       });
     });
 
