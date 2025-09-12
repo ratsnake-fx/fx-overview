@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>4K Trading Wallboard – mit Forex Screener</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0; background:#0f0f10; color:#e8ecff;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      display:grid; grid-template-columns: 26% 44% 30%; grid-template-rows: 100vh;
+      gap:10px; padding:10px;
+    }
+    .col{ display:flex; flex-direction:column; min-height:0; }
+    .panel{
+      background:#111318; border:1px solid #1f2230; border-radius:14px; padding:10px; min-height:0;
+      display:flex; flex-direction:column; gap:10px; box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
+    }
+    .panel h2{ margin:0; font-size:13px; font-weight:800; letter-spacing:.4px; color:#9fb6ff; text-transform:uppercase; }
+    .panel-body{ flex:1; min-height:0; }
+    .toolbar{
+      display:flex; gap:8px; align-items:center; padding:10px;
+      background:#0f1016; border:1px solid #1f2230; border-radius:12px;
+      position:sticky; top:10px; z-index:20;
+    }
+    .toolbar span{ font-size:13px; color:#aab2d3; font-weight:700; }
+    .btn{
+      border:1px solid #2d3348; background:#171a26; color:#eaefff;
+      padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700; font-size:13px;
+    }
+    .btn:hover{ background:#1e2230; }
+    .btn.active{ border-color:#3a86ff; box-shadow:0 0 0 2px rgba(58,134,255,.25) inset; }
+    #miniGrid{
+      flex:1; display:grid; gap:8px; grid-template-columns: repeat(2, 1fr);
+      grid-auto-rows: 1fr; min-height:0; margin-top:10px;
+    }
+    .chart{ min-width:0; min-height:0; }
+    .tradingview-widget-container, .tradingview-widget-container__widget{ width:100%; height:100%; }
+    .stack{ display:grid; grid-template-rows: 34% 33% 33%; gap:10px; height:100%; }
+    .stack2{ display:grid; grid-template-rows: 55% 45%; gap:10px; height:100%; }
+    .embed-wrap{
+      height:100%; width:100%; border-radius:10px; overflow:hidden;
+      background:#0f0f10; border:1px solid #202233;
+    }
+    @media (max-width: 1400px){
+      body{ grid-template-columns: 100%; grid-template-rows: auto auto auto; height:auto; }
+      .left, .center, .right{ min-height:60vh; }
+      .stack, .stack2{ grid-template-rows: unset; }
+      #miniGrid{ grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LEFT: Mini charts -->
+  <div class="col left">
+    <div class="toolbar">
+      <span>Mini-Charts Zeitraum:</span>
+      <button class="btn active" data-range="1D">1D</button>
+      <button class="btn" data-range="1M">1M</button>
+      <button class="btn" data-range="3M">3M</button>
+      <button class="btn" data-range="1Y">1Y</button>
+    </div>
+    <div id="miniGrid"></div>
+  </div>
+
+  <!-- CENTER: Forex Screener + Stock Heatmap + Crypto Heatmap -->
+  <div class="col center">
+    <div class="stack">
+
+      <!-- FOREX SCREENER -->
+      <div class="panel">
+        <h2>Forex Screener</h2>
+        <div class="panel-body">
+          <div class="embed-wrap">
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+              <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+              <script async type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-screener.js">
+              {
+                "market": "forex",
+                "showToolbar": true,
+                "defaultColumn": "performance",
+                "defaultScreen": "general",
+                "isTransparent": false,
+                "locale": "de_DE",
+                "colorTheme": "dark",
+                "width": "100%",
+                "height": "100%"
+              }
+              </script>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STOCKS HEATMAP -->
+      <div class="panel">
+        <h2>Aktien Heatmap (S&P 500)</h2>
+        <div class="panel-body">
+          <div class="embed-wrap">
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+              <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+              <script async type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js">
+              {
+                "dataSource": "SPX500",
+                "blockSize": "market_cap_basic",
+                "blockColor": "change",
+                "grouping": "sector",
+                "locale": "de_DE",
+                "symbolUrl": "",
+                "colorTheme": "dark",
+                "exchanges": [],
+                "hasTopBar": false,
+                "isDataSetEnabled": false,
+                "isZoomEnabled": true,
+                "hasSymbolTooltip": true,
+                "isMonoSize": false,
+                "width": "100%",
+                "height":"100%"
+              }
+              </script>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CRYPTO HEATMAP -->
+      <div class="panel">
+        <h2>Krypto Heatmap</h2>
+        <div class="panel-body">
+          <div class="embed-wrap">
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+              <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+              <script async type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-crypto-coins-heatmap.js">
+              {
+                "dataSource": "Crypto",
+                "blockSize": "market_cap_calc",
+                "blockColor": "24h_close_change|5",
+                "locale": "de_DE",
+                "symbolUrl": "",
+                "colorTheme": "dark",
+                "hasTopBar": true,
+                "isDataSetEnabled": true,
+                "isZoomEnabled": true,
+                "hasSymbolTooltip": true,
+                "isMonoSize": false,
+                "width": "100%",
+                "height":"100%"
+              }
+              </script>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: News + Calendar -->
+  <div class="col right">
+    <div class="stack2">
+
+      <div class="panel">
+        <h2>Aktuelle Nachrichten</h2>
+        <div class="panel-body">
+          <div class="embed-wrap">
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+              <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+              <script async type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js">
+              {
+                "displayMode": "regular",
+                "feedMode": "all_symbols",
+                "colorTheme": "dark",
+                "isTransparent": false,
+                "locale": "de_DE",
+                "width": "100%",
+                "height":"100%"
+              }
+              </script>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Wirtschaftskalender</h2>
+        <div class="panel-body">
+          <div class="embed-wrap">
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+              <div class="tradingview-widget-container__widget" style="height:100%;width:100%"></div>
+              <script async type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-events.js">
+              {
+                "colorTheme": "dark",
+                "isTransparent": false,
+                "locale": "de_DE",
+                "countryFilter": "us,eu,de,fr,it,gb,au,nz,ca,jp,ch,cn",
+                "importanceFilter": "-1,0,1",
+                "width": "100%",
+                "height":"100%"
+              }
+              </script>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mini-charts (links): delayed load + range buttons -->
+  <script>
+    const miniSymbols = [
+      "FX:EURUSD","FX:GBPUSD","FX:USDJPY","FX:USDCHF",
+      "FX:USDCAD","FX:AUDUSD","FX:NZDUSD","FX:EURGBP",
+      "FX:EURJPY","FX:EURAUD","FX:EURNZD","FX:EURCAD",
+      "FX:EURCHF","FX:GBPJPY","FX:AUDJPY","FX:NZDJPY"
+    ];
+
+    const DELAY_MS = 220, RETRY_DELAY_MS = 400, MAX_RETRIES = 1;
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    function miniWidget(symbol, dateRange){
+      const outer = document.createElement('div'); outer.className = 'chart';
+      const wrap = document.createElement('div'); wrap.className = 'tradingview-widget-container';
+      const widget = document.createElement('div'); widget.className = 'tradingview-widget-container__widget';
+      const s = document.createElement('script');
+      s.async = true; s.type = 'text/javascript';
+      s.src  = 'https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js';
+      s.innerHTML = JSON.stringify({ symbol, dateRange, colorTheme:"dark", locale:"de_DE", autosize:true });
+      wrap.appendChild(widget); wrap.appendChild(s); outer.appendChild(wrap);
+      return outer;
+    }
+
+    async function renderMiniGrid(dateRange){
+      const grid = document.getElementById('miniGrid'); grid.innerHTML = "";
+      for (let i=0; i<miniSymbols.length; i++){
+        const sym = miniSymbols[i];
+        let tries = 0, ok = false;
+        while(!ok && tries <= MAX_RETRIES){
+          try { grid.appendChild(miniWidget(sym, dateRange)); ok = true; }
+          catch(e){ tries++; if (tries <= MAX_RETRIES) await sleep(RETRY_DELAY_MS); }
+        }
+        await sleep(DELAY_MS);
+      }
+    }
+
+    document.querySelectorAll('.btn').forEach(b=>{
+      b.addEventListener('click', async ()=>{
+        document.querySelectorAll('.btn').forEach(x=>x.classList.remove('active'));
+        b.classList.add('active');
+        await renderMiniGrid(b.getAttribute('data-range'));
+      });
+    });
+
+    renderMiniGrid("1D");
+  </script>
+
+</body>
+</html>
